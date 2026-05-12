@@ -1,4 +1,4 @@
-name: Build LineageOS - CMF Phone 1
+name: Build Matrixx - CMF Phone 1
 
 on:
   workflow_dispatch:
@@ -59,20 +59,20 @@ jobs:
         chmod a+x ~/bin/repo
         echo "$HOME/bin" >> $GITHUB_PATH
 
-    - name: Initialize Source
+    - name: Initialize Matrixx Source
       run: |
-        mkdir -p ~/android/lineage
-        cd ~/android/lineage
+        mkdir -p ~/android/matrixx
+        cd ~/android/matrixx
         repo init \
-          -u https://github.com/LineageOS/android.git \
-          -b lineage-21 \
+          -u https://github.com/ProjectMatrixx/android.git \
+          -b 12.0 \
           --git-lfs \
           --depth=1
 
     - name: Setup Local Manifest
       run: |
-        mkdir -p ~/android/lineage/.repo/local_manifests
-        cat > ~/android/lineage/.repo/local_manifests/roomservice.xml << 'EOF'
+        mkdir -p ~/android/matrixx/.repo/local_manifests
+        cat > ~/android/matrixx/.repo/local_manifests/roomservice.xml << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
           <remote name="gitlab"
@@ -107,17 +107,17 @@ jobs:
 
     - name: Sync Source
       run: |
-        cd ~/android/lineage
+        cd ~/android/matrixx
         repo sync -c -j$(nproc) \
           --force-sync \
           --no-clone-bundle \
           --no-tags
 
-    - name: Build ROM
+    - name: Build Matrixx
       run: |
-        cd ~/android/lineage
+        cd ~/android/matrixx
         source build/envsetup.sh
-        breakfast lineage_tetris-${{ github.event.inputs.BUILD_TYPE }}
+        lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
         mka bacon -j$(nproc) \
           ALLOW_MISSING_DEPENDENCIES=true
 
@@ -125,8 +125,8 @@ jobs:
       if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: LineageOS-tetris
+        name: Matrixx-tetris
         path: |
-          ~/android/lineage/out/target/product/tetris/lineage-*.zip
-          ~/android/lineage/out/target/product/tetris/recovery.img
+          ~/android/matrixx/out/target/product/tetris/Matrixx-*.zip
+          ~/android/matrixx/out/target/product/tetris/recovery.img
         retention-days: 7
