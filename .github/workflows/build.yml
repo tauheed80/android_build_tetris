@@ -65,7 +65,7 @@ jobs:
         cd ~/android/matrixx
         repo init \
           -u https://github.com/ProjectMatrixx/android.git \
-          -b 12.2 \
+          -b 16.2 \
           --git-lfs \
           --depth=1
 
@@ -82,7 +82,7 @@ jobs:
             name="SuperAviation001/android_device_nothing_Tetris"
             path="device/nothing/tetris"
             remote="github"
-            revision="lineage-21" />
+            revision="lineage-23" />
 
           <project
             name="SuperAviation001/android_device_nothing_Tetris-kernel"
