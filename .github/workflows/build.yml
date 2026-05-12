@@ -75,8 +75,7 @@ jobs:
         cat > ~/android/matrixx/.repo/local_manifests/roomservice.xml << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <manifest>
-          <remote name="gitlab"
-                  fetch="https://gitlab.com" />
+      
 
           <project
             name="SuperAviation001/android_device_nothing_Tetris"
@@ -91,10 +90,10 @@ jobs:
             revision="pixelos-a16" />
 
           <project
-            name="SuperAviation001/android_vendor_nothing_tetris"
-            path="vendor/nothing"
-            remote="gitlab"
-            revision="main" />
+           name="https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris"
+           path="vendor/nothing"
+           clone-depth="1"
+           revision="main" />
 
           <project
             name="SuperAviation001/android_hardware_mediatek"
