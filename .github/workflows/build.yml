@@ -28,59 +28,37 @@ jobs:
             /opt/ghc \
             /opt/hostedtoolcache \
             /usr/local/share/boost \
-            /usr/lib/jvm \
-            /usr/share/swift
-
+            /usr/share/swift \
+            /usr/local/graalvm/ \
+            /usr/local/.ghcup/ \
+            /usr/local/lib/node_modules/ \
+            /usr/share/julia
           sudo apt clean
           sudo docker system prune -af || true
-
-          # Extra space free karo
-          sudo rm -rf /usr/local/graalvm/
-          sudo rm -rf /usr/local/.ghcup/
-          sudo rm -rf /usr/local/lib/node_modules/
-          sudo rm -rf /usr/share/julia
-
           df -h
 
       - name: Install Packages
         run: |
           sudo apt update -y
           sudo apt install -y \
-            git-core \
-            gnupg \
-            flex \
-            bison \
-            build-essential \
-            zip \
-            curl \
-            zlib1g-dev \
-            gcc-multilib \
-            g++-multilib \
-            libc6-dev-i386 \
-            lib32ncurses5-dev \
-            x11proto-core-dev \
-            libx11-dev \
-            lib32z1-dev \
-            libgl1-mesa-dev \
-            libxml2-utils \
-            xsltproc \
-            unzip \
-            fontconfig \
-            python3 \
-            python-is-python3 \
-            libssl-dev \
-            bc \
-            wget \
-            libelf-dev \
-            ccache \
-            lzop \
-            rsync \
-            openjdk-17-jdk
+            git-core gnupg flex bison \
+            build-essential zip curl \
+            zlib1g-dev gcc-multilib \
+            g++-multilib libc6-dev-i386 \
+            lib32ncurses5-dev x11proto-core-dev \
+            libx11-dev lib32z1-dev \
+            libgl1-mesa-dev libxml2-utils \
+            xsltproc unzip fontconfig \
+            python3 python-is-python3 \
+            libssl-dev bc wget libelf-dev \
+            ccache lzop rsync openjdk-17-jdk
 
       - name: Configure Git
         run: |
-          git config --global user.email "build@github.com"
-          git config --global user.name "GitHub Actions"
+          git config --global user.email \
+            "build@github.com"
+          git config --global user.name \
+            "GitHub Actions"
 
       - name: Setup Repo Tool
         run: |
@@ -105,34 +83,28 @@ jobs:
         run: |
           mkdir -p \
             ~/android/matrixx/.repo/local_manifests
-
           cat > ~/android/matrixx/.repo/local_manifests/roomservice.xml << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
 
-            <!-- Device Tree -->
             <project
               name="SuperAviation001/android_device_nothing_Tetris"
               path="device/nothing/tetris"
               remote="github"
-              revision="lineage-23" />
+              revision="pixelos-a16" />
 
-            <!-- Kernel Tree -->
             <project
               name="SuperAviation001/android_device_nothing_Tetris-kernel"
               path="device/nothing/tetris-kernel"
               remote="github"
               revision="pixelos-a16" />
 
-            <!-- Mediatek Hardware -->
             <project
               name="SuperAviation001/android_hardware_mediatek"
               path="hardware/mediatek"
               remote="github"
               revision="main" />
 
-            <!-- Skip Large Prebuilts
-                 Disk space bachane ke liye -->
             <remove-project
               name="platform/prebuilts/clang/host/linux-x86" />
 
@@ -141,17 +113,21 @@ jobs:
 
       - name: Clone Vendor Tree
         run: |
-          git clone \
-            --depth=1 \
+          git clone --depth=1 \
             https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git \
             ~/android/matrixx/vendor/nothing
+
+      - name: Clone Kernel Headers
+        run: |
+          git clone --depth=1 \
+            https://github.com/NothingOSS/android_kernel_6.1_nothing_mt6878.git \
+            ~/android/matrixx/kernel/nothing/tetris
 
       - name: Sync Sources
         run: |
           cd ~/android/matrixx
           repo sync \
-            -c \
-            -j$(nproc) \
+            -c -j$(nproc) \
             --force-sync \
             --no-clone-bundle \
             --no-tags \
