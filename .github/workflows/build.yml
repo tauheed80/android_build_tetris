@@ -65,7 +65,7 @@ jobs:
         cd ~/android/matrixx
         repo init \
           -u https://github.com/ProjectMatrixx/android.git \
-          -b 12.0 \
+          -b 12.2 \
           --git-lfs \
           --depth=1
 
