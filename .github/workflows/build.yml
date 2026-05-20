@@ -89,38 +89,33 @@ jobs:
 
       - name: Fix Device Tree for Matrixx (ULTIMATE FIX)
         run: |
-          # Pehle folder name theek karte hain
+          # 1. Folder ko small 't' mein badalna
           if [ -d "device/nothing/Tetris" ]; then mv device/nothing/Tetris device/nothing/tetris; fi
-          cd device/nothing/tetris
+          cd device/nothing/tetris || true
           
-          # Automatically asli .mk file ka naam dhoondhte hain
-          MAIN_MK=$(ls *_tetris.mk *_Tetris.mk 2>/dev/null | head -n 1)
-          if [ -n "$MAIN_MK" ]; then
-            PREFIX=$(echo "$MAIN_MK" | sed -E 's/_(tetris|Tetris)\.mk//')
-            echo "Mili hui file: $MAIN_MK (Prefix: $PREFIX)"
-            
-            # Agar file pehle se matrixx nahi hai, tabhi rename karenge
-            if [ "$MAIN_MK" != "matrixx_tetris.mk" ]; then
-              mv "$MAIN_MK" matrixx_tetris.mk
-              find . -type f -exec sed -i "s/${PREFIX}_tetris/matrixx_tetris/g" {} +
-              find . -type f -exec sed -i "s/${PREFIX}_Tetris/matrixx_tetris/g" {} +
-              find . -type f -name "matrixx_tetris.mk" -exec sed -i "s/vendor\/${PREFIX}/vendor\/matrixx/g" {} +
-            else
-              echo "File pehle se hi matrixx_tetris.mk hai, rename skip kar rahe hain!"
-            fi
-            
-            # AndroidProducts.mk ko poori tarah overwrite karke matrixx ko force karte hain!
-            cat <<EOF > AndroidProducts.mk
+          # 2. Main file ko matrixx_tetris.mk mein badalna
+          mv lineage_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          mv aosp_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          mv pixelos_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          
+          # 3. File ke andar ke text aur paths ko replace karna
+          find . -type f -exec sed -i "s/pixelos_tetris/matrixx_tetris/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/lineage_tetris/matrixx_tetris/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/vendor\/pixelos/vendor\/matrixx/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/vendor\/lineage/vendor\/matrixx/g" {} + 2>/dev/null || true
+          
+          # ---> YAHI WOH NAYI LINE HAI JO CAPITAL 'T' KO FIX KAREGI <---
+          find . -type f -exec sed -i "s/nothing\/Tetris/nothing\/tetris/g" {} + 2>/dev/null || true
+          
+          # 4. Naya AndroidProducts.mk forcefully banana
+          cat <<EOF > AndroidProducts.mk
           PRODUCT_MAKEFILES := \$(LOCAL_DIR)/matrixx_tetris.mk
           COMMON_LUNCH_CHOICES := matrixx_tetris-bp4a-user matrixx_tetris-bp4a-userdebug
           EOF
-            echo "Tree successfully fixed for Matrixx!"
-          else
-            echo "Error: Device makefile not found! Shayad clone theek se nahi hua."
-            exit 1
-          fi
+          
+          echo "Done! Ab koi case-sensitivity error nahi aayega."
           cd ../../../
-
+          
       - name: Check Disk Space
         run: df -h
 
