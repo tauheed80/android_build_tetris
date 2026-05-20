@@ -6,7 +6,7 @@ on:
       BUILD_TYPE:
         description: 'Build Type'
         required: true
-        default: 'user'
+        default: 'userdebug'
         type: choice
         options:
           - user
@@ -46,17 +46,13 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email \
-            "build@github.com"
-          git config --global user.name \
-            "GitHub Actions"
+          git config --global user.email "build@github.com"
+          git config --global user.name "GitHub Actions"
 
       - name: Setup Repo Tool
         run: |
           mkdir -p ~/bin
-          curl -L \
-            https://storage.googleapis.com/git-repo-downloads/repo \
-            > ~/bin/repo
+          curl -L https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
           echo "$HOME/bin" >> $GITHUB_PATH
 
@@ -70,52 +66,55 @@ jobs:
         run: |
           mkdir -p ~/android/matrixx
           cd ~/android/matrixx
-          repo init \
-            -u https://github.com/ProjectMatrixx/android.git \
-            -b 16.2 \
-            --git-lfs
+          repo init -u https://github.com/ProjectMatrixx/android.git -b 16.2 --git-lfs
 
       - name: Setup Local Manifest
         run: |
-          mkdir -p \
-            ~/android/matrixx/.repo/local_manifests
-
+          mkdir -p ~/android/matrixx/.repo/local_manifests
           cat > ~/android/matrixx/.repo/local_manifests/roomservice.xml << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-
-            <!-- CMF Phone 1 Device Tree -->
-            <project
-              name="SuperAviation001/android_device_nothing_Tetris"
-              path="device/nothing/tetris"
-              remote="github"
-              revision="pixelos-a16" />
-
+            <project name="SuperAviation001/android_device_nothing_Tetris" path="device/nothing/tetris" remote="github" revision="pixelos-a16" />
           </manifest>
           EOF
 
       - name: Sync Sources
-       run: |
-         repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle --no-tags
-    
+        run: |
+          cd ~/android/matrixx
+          git config --global http.postBuffer 1048576000
+          repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle --no-tags
 
       - name: Clone Kernel Tree
         run: |
-          git clone --depth=1 \
-            https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git \
-            ~/android/matrixx/device/nothing/tetris-kernel
+          rm -rf ~/android/matrixx/kernel/nothing/tetris
+          git clone --depth=1 https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git ~/android/matrixx/kernel/nothing/tetris
 
       - name: Clone Vendor Tree
         run: |
-          git clone --depth=1 \
-            https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git \
-            ~/android/matrixx/vendor/nothing
+          rm -rf ~/android/matrixx/vendor/nothing/tetris
+          git clone --depth=1 https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git ~/android/matrixx/vendor/nothing/tetris
 
       - name: Clone Hardware MediaTek
         run: |
-          git clone --depth=1 \
-            https://github.com/SuperAviation001/android_hardware_mediatek.git \
-            ~/android/matrixx/hardware/mediatek
+          rm -rf ~/android/matrixx/hardware/mediatek
+          git clone --depth=1 https://github.com/SuperAviation001/android_hardware_mediatek.git ~/android/matrixx/hardware/mediatek
+
+      - name: Fix Case-Sensitivity and Tree Names
+        run: |
+          cd ~/android/matrixx
+          
+          # Folder aur Files mein agar koi Capital Tetris ya Lineage naam hai toh use sahi karna
+          cd device/nothing/tetris
+          mv lineage_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          mv aosp_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          mv lineage_Tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          
+          # Files ke andar ke codes ko Matrixx ke mutabik patch karna
+          sed -i 's/lineage_tetris/matrixx_tetris/g' * 2>/dev/null || true
+          sed -i 's/aosp_tetris/matrixx_tetris/g' * 2>/dev/null || true
+          sed -i 's/lineage_Tetris/matrixx_tetris/g' * 2>/dev/null || true
+          sed -i 's/Tetris/tetris/g' * 2>/dev/null || true
+          sed -i 's/lineage/matrixx/g' matrixx_tetris.mk 2>/dev/null || true
 
       - name: Check Disk Space
         run: df -h
@@ -124,16 +123,18 @@ jobs:
         run: |
           cd ~/android/matrixx
           source build/envsetup.sh
-          lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }}
+          
+          # Agar aapka combo lunch na ho toh yeh dono methods automatically try karega
+          lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }} || lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
+          
           export ALLOW_MISSING_DEPENDENCIES=true
-          make matrixx -j$(nproc)
+          mka bacon -j$(nproc --all)
 
       - name: ROM Details
         if: success()
         run: |
-          ls ~/android/matrixx/out/target/product/tetris/*.zip
-          du -sh \
-            ~/android/matrixx/out/target/product/tetris/*.zip
+          ls ~/android/matrixx/out/target/product/tetris/*.zip || ls ~/android/matrixx/out/target/product/Tetris/*.zip
+          du -sh ~/android/matrixx/out/target/product/tetris/*.zip || du -sh ~/android/matrixx/out/target/product/Tetris/*.zip
 
       - name: Upload ROM
         if: success()
@@ -142,9 +143,9 @@ jobs:
           tag_name: matrixx-tetris-${{ github.run_number }}
           name: "Matrixx v16.2 CMF Phone 1 Build #${{ github.run_number }}"
           body: |
-            ## Matrixx v16.2 - CMF Phone 1
+            ## Matrixx v16.2 - CMF Phone 1 (tetris)
             **Type:** ${{ github.event.inputs.BUILD_TYPE }}
-            ### Trees:
+            ### Trees Used:
             - Device: SuperAviation001/android_device_nothing_Tetris
             - Kernel: SuperAviation001/android_device_nothing_Tetris-kernel
             - Vendor: SuperAviation001/android_vendor_nothing_tetris
@@ -152,6 +153,9 @@ jobs:
           files: |
             ~/android/matrixx/out/target/product/tetris/*.zip
             ~/android/matrixx/out/target/product/tetris/boot.img
-            ~/android/matrixx/out/target/product/tetris/recovery.img
+            ~/android/matrixx/out/target/product/tetris/vendor_boot.img
+            ~/android/matrixx/out/target/product/Tetris/*.zip
+            ~/android/matrixx/out/target/product/Tetris/boot.img
+            ~/android/matrixx/out/target/product/Tetris/vendor_boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
