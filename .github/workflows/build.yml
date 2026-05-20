@@ -63,7 +63,7 @@ jobs:
           cat > .repo/local_manifests/roomservice.xml << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <project name="SuperAviation001/android_device_nothing_Tetris" path="device/nothing/tetris" remote="github" revision="pixelos-a16" />
+            <project name="SuperAviation001/android_device_nothing_Tetris" path="device/nothing/Tetris" remote="github" revision="pixelos-a16" />
           </manifest>
           EOF
 
@@ -74,48 +74,54 @@ jobs:
 
       - name: Clone Kernel Tree
         run: |
-          rm -rf kernel/nothing/tetris
-          git clone --depth=1 https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git kernel/nothing/tetris
+          rm -rf kernel/nothing/Tetris
+          git clone --depth=1 https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git kernel/nothing/Tetris
 
       - name: Clone Vendor Tree
         run: |
-          rm -rf vendor/nothing/tetris
-          git clone --depth=1 https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git vendor/nothing/tetris
+          rm -rf vendor/nothing/Tetris
+          git clone --depth=1 https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git vendor/nothing/Tetris
 
       - name: Clone Hardware MediaTek
         run: |
           rm -rf hardware/mediatek
           git clone --depth=1 https://github.com/SuperAviation001/android_hardware_mediatek.git hardware/mediatek
 
-      - name: Fix Device Tree for Matrixx (ULTIMATE FIX)
+      - name: Fix Device Tree for Matrixx (Capital Tetris Fix)
         run: |
-          # 1. Folder ko small 't' mein badalna
-          if [ -d "device/nothing/Tetris" ]; then mv device/nothing/Tetris device/nothing/tetris; fi
-          cd device/nothing/tetris || true
+          # Device folder mein jayenge (Ab Capital T use hoga)
+          cd device/nothing/Tetris || true
           
-          # 2. Main file ko matrixx_tetris.mk mein badalna
-          mv lineage_tetris.mk matrixx_tetris.mk 2>/dev/null || true
-          mv aosp_tetris.mk matrixx_tetris.mk 2>/dev/null || true
-          mv pixelos_tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          # Main files ko matrixx_Tetris.mk mein badalna
+          mv lineage_tetris.mk matrixx_Tetris.mk 2>/dev/null || true
+          mv aosp_tetris.mk matrixx_Tetris.mk 2>/dev/null || true
+          mv pixelos_tetris.mk matrixx_Tetris.mk 2>/dev/null || true
+          mv lineage_Tetris.mk matrixx_Tetris.mk 2>/dev/null || true
+          mv aosp_Tetris.mk matrixx_Tetris.mk 2>/dev/null || true
+          mv pixelos_Tetris.mk matrixx_Tetris.mk 2>/dev/null || true
           
-          # 3. File ke andar ke text aur paths ko replace karna
-          find . -type f -exec sed -i "s/pixelos_tetris/matrixx_tetris/g" {} + 2>/dev/null || true
-          find . -type f -exec sed -i "s/lineage_tetris/matrixx_tetris/g" {} + 2>/dev/null || true
+          # Har jagah pixelos/lineage aur small tetris ko matrixx_Tetris se badalna
+          find . -type f -exec sed -i "s/pixelos_Tetris/matrixx_Tetris/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/lineage_Tetris/matrixx_Tetris/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/pixelos_tetris/matrixx_Tetris/g" {} + 2>/dev/null || true
+          find . -type f -exec sed -i "s/lineage_tetris/matrixx_Tetris/g" {} + 2>/dev/null || true
+          
+          # Paths ko theek karna taaki device.mk mil sake
+          find . -type f -exec sed -i "s/nothing\/tetris/nothing\/Tetris/g" {} + 2>/dev/null || true
+          
+          # Vendor path ko matrixx vendor pe set karna
           find . -type f -exec sed -i "s/vendor\/pixelos/vendor\/matrixx/g" {} + 2>/dev/null || true
           find . -type f -exec sed -i "s/vendor\/lineage/vendor\/matrixx/g" {} + 2>/dev/null || true
           
-          # ---> YAHI WOH NAYI LINE HAI JO CAPITAL 'T' KO FIX KAREGI <---
-          find . -type f -exec sed -i "s/nothing\/Tetris/nothing\/tetris/g" {} + 2>/dev/null || true
-          
-          # 4. Naya AndroidProducts.mk forcefully banana
+          # Naya AndroidProducts.mk forceful setup (Capital T ke sath)
           cat <<EOF > AndroidProducts.mk
-          PRODUCT_MAKEFILES := \$(LOCAL_DIR)/matrixx_tetris.mk
-          COMMON_LUNCH_CHOICES := matrixx_tetris-bp4a-user matrixx_tetris-bp4a-userdebug
+          PRODUCT_MAKEFILES := \$(LOCAL_DIR)/matrixx_Tetris.mk
+          COMMON_LUNCH_CHOICES := matrixx_Tetris-bp4a-user matrixx_Tetris-bp4a-userdebug
           EOF
           
-          echo "Done! Ab koi case-sensitivity error nahi aayega."
+          echo "Done! Case-sensitivity issue permanently fixed using Capital Tetris."
           cd ../../../
-          
+
       - name: Check Disk Space
         run: df -h
 
@@ -123,33 +129,33 @@ jobs:
         run: |
           source build/envsetup.sh
           
-          # Matrixx 16.2 ka official lunch format
-          lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }}
+          # Matrixx 16.2 ka official lunch format (Capital Tetris ke sath)
+          lunch matrixx_Tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }}
           
           export ALLOW_MISSING_DEPENDENCIES=true
           
           # Matrixx ka official build command
           make matrixx -j$(nproc --all)
-          
 
       - name: ROM Details
         if: success()
         run: |
-          ls out/target/product/tetris/*.zip || true
-          du -sh out/target/product/tetris/*.zip || true
+          ls out/target/product/Tetris/*.zip || true
+          du -sh out/target/product/Tetris/*.zip || true
 
       - name: Upload ROM
         if: success()
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: matrixx-tetris-${{ github.run_number }}
+          tag_name: matrixx-Tetris-${{ github.run_number }}
           name: "Matrixx v16.2 CMF Phone 1 Build #${{ github.run_number }}"
           body: |
-            ## Matrixx v16.2 - CMF Phone 1 (tetris)
+            ## Matrixx v16.2 - CMF Phone 1 (Tetris)
             **Type:** ${{ github.event.inputs.BUILD_TYPE }}
           files: |
-            out/target/product/tetris/*.zip
-            out/target/product/tetris/boot.img
-            out/target/product/tetris/vendor_boot.img
+            out/target/product/Tetris/*.zip
+            out/target/product/Tetris/boot.img
+            out/target/product/Tetris/vendor_boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
