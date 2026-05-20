@@ -93,26 +93,26 @@ jobs:
           if [ -d "device/nothing/Tetris" ]; then mv device/nothing/Tetris device/nothing/tetris; fi
           cd device/nothing/tetris
           
-          # Automatically asli .mk file ka naam aur prefix (e.g. pixelos) dhoondhte hain
+          # Automatically asli .mk file ka naam dhoondhte hain
           MAIN_MK=$(ls *_tetris.mk *_Tetris.mk 2>/dev/null | head -n 1)
           if [ -n "$MAIN_MK" ]; then
             PREFIX=$(echo "$MAIN_MK" | sed -E 's/_(tetris|Tetris)\.mk//')
             echo "Mili hui file: $MAIN_MK (Prefix: $PREFIX)"
             
-            # File ko Matrixx ke liye rename karte hain
-            mv "$MAIN_MK" matrixx_tetris.mk
-            
-            # Har file ke andar pixelos_tetris ko matrixx_tetris se badal dete hain
-            find . -type f -exec sed -i "s/${PREFIX}_tetris/matrixx_tetris/g" {} +
-            find . -type f -exec sed -i "s/${PREFIX}_Tetris/matrixx_tetris/g" {} +
-            
-            # ROM config path ko fix karte hain (vendor/pixelos -> vendor/matrixx)
-            find . -type f -name "matrixx_tetris.mk" -exec sed -i "s/vendor\/${PREFIX}/vendor\/matrixx/g" {} +
+            # Agar file pehle se matrixx nahi hai, tabhi rename karenge
+            if [ "$MAIN_MK" != "matrixx_tetris.mk" ]; then
+              mv "$MAIN_MK" matrixx_tetris.mk
+              find . -type f -exec sed -i "s/${PREFIX}_tetris/matrixx_tetris/g" {} +
+              find . -type f -exec sed -i "s/${PREFIX}_Tetris/matrixx_tetris/g" {} +
+              find . -type f -name "matrixx_tetris.mk" -exec sed -i "s/vendor\/${PREFIX}/vendor\/matrixx/g" {} +
+            else
+              echo "File pehle se hi matrixx_tetris.mk hai, rename skip kar rahe hain!"
+            fi
             
             # AndroidProducts.mk ko poori tarah overwrite karke matrixx ko force karte hain!
             cat <<EOF > AndroidProducts.mk
           PRODUCT_MAKEFILES := \$(LOCAL_DIR)/matrixx_tetris.mk
-          COMMON_LUNCH_CHOICES := matrixx_tetris-user matrixx_tetris-userdebug matrixx_tetris-eng
+          COMMON_LUNCH_CHOICES := matrixx_tetris-bp4a-user matrixx_tetris-bp4a-userdebug
           EOF
             echo "Tree successfully fixed for Matrixx!"
           else
