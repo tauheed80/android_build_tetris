@@ -29,19 +29,11 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install -y \
-            git-core gnupg flex bison \
-            build-essential zip curl \
-            zlib1g-dev gcc-multilib \
-            g++-multilib libc6-dev-i386 \
-            lib32ncurses5-dev \
-            x11proto-core-dev \
-            libx11-dev lib32z1-dev \
-            libgl1-mesa-dev libxml2-utils \
-            xsltproc unzip fontconfig \
-            python3 python-is-python3 \
-            libssl-dev bc wget libelf-dev \
-            ccache lzop rsync \
-            openjdk-17-jdk
+            git-core gnupg flex bison build-essential zip curl zlib1g-dev \
+            gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev \
+            x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev \
+            libxml2-utils xsltproc unzip fontconfig python3 python-is-python3 \
+            libssl-dev bc wget libelf-dev ccache lzop rsync openjdk-17-jdk
 
       - name: Configure Git
         run: |
@@ -63,7 +55,6 @@ jobs:
 
       - name: Initialize Matrixx Source
         run: |
-          # GitHub ke automatic workspace folder ka use karenge takki paths sahi rahein
           repo init -u https://github.com/ProjectMatrixx/android.git -b 16.2 --git-lfs
 
       - name: Setup Local Manifest
@@ -79,7 +70,7 @@ jobs:
       - name: Sync Sources
         run: |
           git config --global http.postBuffer 1048576000
-          repo sync -c -j16 --fail-fast --force-sync --no-clone-bundle --no-tags
+          repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle --no-tags
 
       - name: Clone Kernel Tree
         run: |
@@ -96,21 +87,39 @@ jobs:
           rm -rf hardware/mediatek
           git clone --depth=1 https://github.com/SuperAviation001/android_hardware_mediatek.git hardware/mediatek
 
-      - name: Fix Case-Sensitivity and Tree Names
+      - name: Fix Device Tree for Matrixx (ULTIMATE FIX)
         run: |
-          # Agar tree ke andar files capital/small ya lineage name se hain toh unhe badalna
+          # Pehle folder name theek karte hain
+          if [ -d "device/nothing/Tetris" ]; then mv device/nothing/Tetris device/nothing/tetris; fi
           cd device/nothing/tetris
-          mv lineage_tetris.mk matrixx_tetris.mk 2>/dev/null || true
-          mv aosp_tetris.mk matrixx_tetris.mk 2>/dev/null || true
-          mv lineage_Tetris.mk matrixx_tetris.mk 2>/dev/null || true
-          mv aosp_Tetris.mk matrixx_tetris.mk 2>/dev/null || true
           
-          # Codes ke andar bache hue namo ko Matrixx ke hisab se rename karna
-          sed -i 's/lineage_tetris/matrixx_tetris/g' * 2>/dev/null || true
-          sed -i 's/aosp_tetris/matrixx_tetris/g' * 2>/dev/null || true
-          sed -i 's/lineage_Tetris/matrixx_tetris/g' * 2>/dev/null || true
-          sed -i 's/Tetris/tetris/g' * 2>/dev/null || true
-          sed -i 's/lineage/matrixx/g' matrixx_tetris.mk 2>/dev/null || true
+          # Automatically asli .mk file ka naam aur prefix (e.g. pixelos) dhoondhte hain
+          MAIN_MK=$(ls *_tetris.mk *_Tetris.mk 2>/dev/null | head -n 1)
+          if [ -n "$MAIN_MK" ]; then
+            PREFIX=$(echo "$MAIN_MK" | sed -E 's/_(tetris|Tetris)\.mk//')
+            echo "Mili hui file: $MAIN_MK (Prefix: $PREFIX)"
+            
+            # File ko Matrixx ke liye rename karte hain
+            mv "$MAIN_MK" matrixx_tetris.mk
+            
+            # Har file ke andar pixelos_tetris ko matrixx_tetris se badal dete hain
+            find . -type f -exec sed -i "s/${PREFIX}_tetris/matrixx_tetris/g" {} +
+            find . -type f -exec sed -i "s/${PREFIX}_Tetris/matrixx_tetris/g" {} +
+            
+            # ROM config path ko fix karte hain (vendor/pixelos -> vendor/matrixx)
+            find . -type f -name "matrixx_tetris.mk" -exec sed -i "s/vendor\/${PREFIX}/vendor\/matrixx/g" {} +
+            
+            # AndroidProducts.mk ko poori tarah overwrite karke matrixx ko force karte hain!
+            cat <<EOF > AndroidProducts.mk
+          PRODUCT_MAKEFILES := \$(LOCAL_DIR)/matrixx_tetris.mk
+          COMMON_LUNCH_CHOICES := matrixx_tetris-user matrixx_tetris-userdebug matrixx_tetris-eng
+          EOF
+            echo "Tree successfully fixed for Matrixx!"
+          else
+            echo "Error: Device makefile not found! Shayad clone theek se nahi hua."
+            exit 1
+          fi
+          cd ../../../
 
       - name: Check Disk Space
         run: df -h
@@ -118,18 +127,16 @@ jobs:
       - name: Build Matrixx
         run: |
           source build/envsetup.sh
-          
-          # Sahi lunch combo match karne ke liye alag-alag variations try karega automatic
-          lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }} || lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
-          
+          # Ab yeh error 100% bypass ho jayega
+          lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
           export ALLOW_MISSING_DEPENDENCIES=true
           mka bacon -j$(nproc --all)
 
       - name: ROM Details
         if: success()
         run: |
-          ls out/target/product/tetris/*.zip || ls out/target/product/Tetris/*.zip
-          du -sh out/target/product/tetris/*.zip || du -sh out/target/product/Tetris/*.zip
+          ls out/target/product/tetris/*.zip || true
+          du -sh out/target/product/tetris/*.zip || true
 
       - name: Upload ROM
         if: success()
@@ -144,8 +151,5 @@ jobs:
             out/target/product/tetris/*.zip
             out/target/product/tetris/boot.img
             out/target/product/tetris/vendor_boot.img
-            out/target/product/Tetris/*.zip
-            out/target/product/Tetris/boot.img
-            out/target/product/Tetris/vendor_boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
