@@ -127,10 +127,15 @@ jobs:
       - name: Build Matrixx
         run: |
           source build/envsetup.sh
-          # Ab yeh error 100% bypass ho jayega
-          lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
+          
+          # Matrixx 16.2 ka official lunch format
+          lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }}
+          
           export ALLOW_MISSING_DEPENDENCIES=true
-          mka bacon -j$(nproc --all)
+          
+          # Matrixx ka official build command
+          make matrixx -j$(nproc --all)
+          
 
       - name: ROM Details
         if: success()
