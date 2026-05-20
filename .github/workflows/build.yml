@@ -95,13 +95,9 @@ jobs:
           EOF
 
       - name: Sync Sources
-        run: |
-          cd ~/android/matrixx
-          repo sync -c \
-            -j$(nproc --all) \
-            --force-sync \
-            --no-clone-bundle \
-            --no-tags
+       run: |
+         repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle --no-tags
+    
 
       - name: Clone Kernel Tree
         run: |
