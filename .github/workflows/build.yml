@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 720
 
     steps:
-
       - name: System Info
         run: |
           echo "CPU: $(nproc) cores"
@@ -64,14 +63,13 @@ jobs:
 
       - name: Initialize Matrixx Source
         run: |
-          mkdir -p ~/android/matrixx
-          cd ~/android/matrixx
+          # GitHub ke automatic workspace folder ka use karenge takki paths sahi rahein
           repo init -u https://github.com/ProjectMatrixx/android.git -b 16.2 --git-lfs
 
       - name: Setup Local Manifest
         run: |
-          mkdir -p ~/android/matrixx/.repo/local_manifests
-          cat > ~/android/matrixx/.repo/local_manifests/roomservice.xml << 'EOF'
+          mkdir -p .repo/local_manifests
+          cat > .repo/local_manifests/roomservice.xml << 'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
             <project name="SuperAviation001/android_device_nothing_Tetris" path="device/nothing/tetris" remote="github" revision="pixelos-a16" />
@@ -80,36 +78,34 @@ jobs:
 
       - name: Sync Sources
         run: |
-          cd ~/android/matrixx
           git config --global http.postBuffer 1048576000
           repo sync -c -j4 --fail-fast --force-sync --no-clone-bundle --no-tags
 
       - name: Clone Kernel Tree
         run: |
-          rm -rf ~/android/matrixx/kernel/nothing/tetris
-          git clone --depth=1 https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git ~/android/matrixx/kernel/nothing/tetris
+          rm -rf kernel/nothing/tetris
+          git clone --depth=1 https://github.com/SuperAviation001/android_device_nothing_Tetris-kernel.git kernel/nothing/tetris
 
       - name: Clone Vendor Tree
         run: |
-          rm -rf ~/android/matrixx/vendor/nothing/tetris
-          git clone --depth=1 https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git ~/android/matrixx/vendor/nothing/tetris
+          rm -rf vendor/nothing/tetris
+          git clone --depth=1 https://gitlab.com/SuperAviation001/android_vendor_nothing_tetris.git vendor/nothing/tetris
 
       - name: Clone Hardware MediaTek
         run: |
-          rm -rf ~/android/matrixx/hardware/mediatek
-          git clone --depth=1 https://github.com/SuperAviation001/android_hardware_mediatek.git ~/android/matrixx/hardware/mediatek
+          rm -rf hardware/mediatek
+          git clone --depth=1 https://github.com/SuperAviation001/android_hardware_mediatek.git hardware/mediatek
 
       - name: Fix Case-Sensitivity and Tree Names
         run: |
-          cd ~/android/matrixx
-          
-          # Folder aur Files mein agar koi Capital Tetris ya Lineage naam hai toh use sahi karna
+          # Agar tree ke andar files capital/small ya lineage name se hain toh unhe badalna
           cd device/nothing/tetris
           mv lineage_tetris.mk matrixx_tetris.mk 2>/dev/null || true
           mv aosp_tetris.mk matrixx_tetris.mk 2>/dev/null || true
           mv lineage_Tetris.mk matrixx_tetris.mk 2>/dev/null || true
+          mv aosp_Tetris.mk matrixx_tetris.mk 2>/dev/null || true
           
-          # Files ke andar ke codes ko Matrixx ke mutabik patch karna
+          # Codes ke andar bache hue namo ko Matrixx ke hisab se rename karna
           sed -i 's/lineage_tetris/matrixx_tetris/g' * 2>/dev/null || true
           sed -i 's/aosp_tetris/matrixx_tetris/g' * 2>/dev/null || true
           sed -i 's/lineage_Tetris/matrixx_tetris/g' * 2>/dev/null || true
@@ -121,10 +117,9 @@ jobs:
 
       - name: Build Matrixx
         run: |
-          cd ~/android/matrixx
           source build/envsetup.sh
           
-          # Agar aapka combo lunch na ho toh yeh dono methods automatically try karega
+          # Sahi lunch combo match karne ke liye alag-alag variations try karega automatic
           lunch matrixx_tetris-bp4a-${{ github.event.inputs.BUILD_TYPE }} || lunch matrixx_tetris-${{ github.event.inputs.BUILD_TYPE }}
           
           export ALLOW_MISSING_DEPENDENCIES=true
@@ -133,8 +128,8 @@ jobs:
       - name: ROM Details
         if: success()
         run: |
-          ls ~/android/matrixx/out/target/product/tetris/*.zip || ls ~/android/matrixx/out/target/product/Tetris/*.zip
-          du -sh ~/android/matrixx/out/target/product/tetris/*.zip || du -sh ~/android/matrixx/out/target/product/Tetris/*.zip
+          ls out/target/product/tetris/*.zip || ls out/target/product/Tetris/*.zip
+          du -sh out/target/product/tetris/*.zip || du -sh out/target/product/Tetris/*.zip
 
       - name: Upload ROM
         if: success()
@@ -145,17 +140,12 @@ jobs:
           body: |
             ## Matrixx v16.2 - CMF Phone 1 (tetris)
             **Type:** ${{ github.event.inputs.BUILD_TYPE }}
-            ### Trees Used:
-            - Device: SuperAviation001/android_device_nothing_Tetris
-            - Kernel: SuperAviation001/android_device_nothing_Tetris-kernel
-            - Vendor: SuperAviation001/android_vendor_nothing_tetris
-            - Hardware: SuperAviation001/android_hardware_mediatek
           files: |
-            ~/android/matrixx/out/target/product/tetris/*.zip
-            ~/android/matrixx/out/target/product/tetris/boot.img
-            ~/android/matrixx/out/target/product/tetris/vendor_boot.img
-            ~/android/matrixx/out/target/product/Tetris/*.zip
-            ~/android/matrixx/out/target/product/Tetris/boot.img
-            ~/android/matrixx/out/target/product/Tetris/vendor_boot.img
+            out/target/product/tetris/*.zip
+            out/target/product/tetris/boot.img
+            out/target/product/tetris/vendor_boot.img
+            out/target/product/Tetris/*.zip
+            out/target/product/Tetris/boot.img
+            out/target/product/Tetris/vendor_boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
